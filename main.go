@@ -17,6 +17,10 @@ var (
 	msg  = flag.String("msg", "Phrase Found", "the message notification title")
 )
 
+const (
+	si = "/dev/stdin"
+)
+
 func init() {
 	flag.Parse()
 }
@@ -30,10 +34,10 @@ func main() {
 	not := notificator.New(notificator.Options{AppName: "grep-notify"})
 
 	if *file == "-" {
-		*file = "/dev/stdin"
+		*file = si
 	}
 
-	f, err := tail.TailFile(*file, tail.Config{Follow: true})
+	f, err := tail.TailFile(*file, tail.Config{Follow: *file != si, Pipe: *file == si})
 
 	if err != nil {
 		log.Fatal(err)
@@ -47,5 +51,9 @@ func main() {
 			}
 			return
 		}
+	}
+
+	if err = f.Err(); err != nil {
+		log.Fatal(err)
 	}
 }
