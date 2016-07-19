@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"os"
 	"strings"
 	"time"
 
@@ -21,6 +22,11 @@ func init() {
 }
 
 func main() {
+	if len(flag.Args()) < 1 {
+		fmt.Println("Must include a search phrase as the last argument.")
+		os.Exit(1)
+	}
+
 	not := notificator.New(notificator.Options{AppName: "grep-notify"})
 
 	if *file == "-" {
