@@ -23,7 +23,7 @@ func init() {
 
 func main() {
 	if len(flag.Args()) < 1 {
-		fmt.Println("Must include a search phrase as the last argument.")
+		fmt.Fprintln(os.Stderr, "Must include a search phrase as the last argument.")
 		os.Exit(1)
 	}
 
