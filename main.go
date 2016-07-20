@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
 	"strings"
 	"time"
 
@@ -13,8 +14,8 @@ import (
 )
 
 var (
-	file = flag.String("f", "-", "the file to open")
-	msg  = flag.String("msg", "Phrase Found", "the message notification title")
+	msg = flag.String("msg", "Phrase Found", "the message notification title")
+	num = flag.Int64("n", 1, "the number of entries to alert before exiting. <1 indicates all matches (grep-notify must be sent SIGINT (ctrl-c))")
 )
 
 const (
@@ -31,29 +32,61 @@ func main() {
 		os.Exit(1)
 	}
 
-	not := notificator.New(notificator.Options{AppName: "grep-notify"})
+	var fPath string
 
-	if *file == "-" {
-		*file = si
+	if len(flag.Args()) > 1 {
+		if len(flag.Args()) > 2 {
+			fmt.Fprintln(os.Stderr, "Warning: only one filename can be used currently")
+		}
+		fPath = flag.Args()[1]
 	}
 
-	f, err := tail.TailFile(*file, tail.Config{Follow: *file != si, Pipe: *file == si})
+	not := notificator.New(notificator.Options{AppName: "grep-notify"})
+
+	if fPath == "-" || fPath == "" {
+		fPath = si
+	}
+
+	f, err := tail.TailFile(fPath, tail.Config{Follow: fPath != si, Pipe: fPath == si})
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	var matches int64
+
+	if *num < 1 {
+		handleSigint()
+	}
+
 	for l := range f.Lines {
 		if strings.Contains(l.Text, flag.Args()[0]) {
+			matches++
+
+			fmt.Fprintln(os.Stdout, l.Text)
 			err = not.Push(*msg, fmt.Sprintf("%s: %s", time.Now(), l.Text), "", notificator.UR_NORMAL)
 			if err != nil {
 				log.Fatal(err)
 			}
-			return
+
+			if matches >= *num && *num > 0 {
+				return
+			}
 		}
 	}
 
 	if err = f.Err(); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func handleSigint() {
+	ch := make(chan os.Signal)
+	go signal.Notify(ch, os.Interrupt)
+	go func() {
+		select {
+		case <-ch:
+			os.Exit(0)
+		}
+	}()
 }
