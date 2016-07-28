@@ -47,7 +47,20 @@ func main() {
 		fPath = si
 	}
 
-	f, err := tail.TailFile(fPath, tail.Config{Follow: fPath != si, Pipe: fPath == si})
+	isPipe := false
+
+	st, err := os.Stat(fPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	modePipe := os.ModeNamedPipe | os.ModeCharDevice | os.ModeSocket
+
+	if st.Mode()&modePipe != 0 {
+		isPipe = true
+	}
+
+	f, err := tail.TailFile(fPath, tail.Config{Follow: !isPipe, Pipe: isPipe})
 
 	if err != nil {
 		log.Fatal(err)
