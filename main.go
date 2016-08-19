@@ -16,6 +16,7 @@ import (
 var (
 	msg = flag.String("msg", "Phrase Found", "the message notification title")
 	num = flag.Int64("n", 1, "the number of entries to alert before exiting. <1 indicates all matches (grep-notify must be sent SIGINT (ctrl-c))")
+	sms = flag.Bool("sms", false, "Send an sms when the phrase is found")
 )
 
 const (
@@ -75,6 +76,13 @@ func main() {
 	for l := range f.Lines {
 		if strings.Contains(l.Text, flag.Args()[0]) {
 			matches++
+
+			if *sms {
+				err := sendSMS(l.Text, *msg)
+				if err != nil {
+					log.Println("SMS error", err)
+				}
+			}
 
 			fmt.Fprintln(os.Stdout, l.Text)
 			err = not.Push(*msg, fmt.Sprintf("%s: %s", time.Now(), l.Text), "", notificator.UR_NORMAL)
