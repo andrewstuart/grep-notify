@@ -27,14 +27,7 @@ func sendSMS(text, subject string) error {
 	svc := sns.New(sess, aws.NewConfig().WithRegion(smsRegion))
 
 	in := &sns.PublishInput{
-		Message: aws.String(text),
-		// MessageAttributes: map[string]*sns.MessageAttributeValue{
-		// 	"Key": {
-		// 		DataType:    aws.String("String"),
-		// 		BinaryValue: []byte("PAYLOAD"),
-		// 		StringValue: aws.String("String"),
-		// 	},
-		// },
+		Message:  aws.String(text),
 		Subject:  aws.String(subject),
 		TopicArn: aws.String(smsARN),
 	}
